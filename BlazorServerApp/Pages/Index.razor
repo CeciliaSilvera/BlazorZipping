@@ -1,11 +1,10 @@
 @page "/"
 @using System.IO
 @using System.IO.Compression
-@using System.Diagnostics
 @using System.Text
 @inject IJSRuntime JSRuntime
 
-<h1>Zzzziping</h1>
+<h1>SERVER Zzzziping</h1>
 
 <InputFile OnChange="Upload"/>
 @if (isLoading)
@@ -18,18 +17,14 @@ else if(hasUploaded)
         <li>
             <ul>
                 <li>Name: @originalFile.Name</li>
-                <li>Last modified: @originalFile.LastModified.ToString()</li>
                 <li>Size (bytes): @originalFile.Size</li>
             </ul>
         </li>
     </ul>
-    @if (hasUploaded)
-    {
-        <button class="btn btn-primary" onclick="zip()">zipit</button>
-    }
+    <button class="btn btn-primary" onclick="zip()">zipit</button>
     @if (zipping)
     {
-        <p>zipping ...</p>
+        <p>zipping ... check console for results</p>
     }
 }
 
@@ -38,7 +33,6 @@ else if(hasUploaded)
     private bool isLoading;
     private bool hasUploaded;
     private static bool zipping;
-    private static Stopwatch timer = new();
     
 
     void Upload(InputFileChangeEventArgs e)
@@ -46,18 +40,16 @@ else if(hasUploaded)
         isLoading = true;
         hasUploaded = false;
         zipping = false;
-        timer.Reset();
-
         originalFile = e.GetMultipleFiles(1).FirstOrDefault();
         isLoading = false;
         hasUploaded = true;
     }
 
     [JSInvokable]
-    public static async Task<ZipFileResult> BeginZipFile()
+    public static async Task<ZipFileResult> GetZipResult()
     {
         zipping = true;
-        var stream = await Zipit();
+        var stream = await GetZipFile();
         return new ZipFileResult { FileName = "test.zip", ContentType = "application/octet-stream", FileBytes = stream.ToArray() };
     }
 
@@ -68,7 +60,7 @@ else if(hasUploaded)
         public byte[] FileBytes { get; set; }
     }
 
-    private static async Task<MemoryStream> Zipit()
+    private static async Task<MemoryStream> GetZipFile()
     {
         await using var zipFileMemoryStream = new MemoryStream();
         using var archive = new ZipArchive(zipFileMemoryStream, ZipArchiveMode.Create, leaveOpen: true, Encoding.UTF8);

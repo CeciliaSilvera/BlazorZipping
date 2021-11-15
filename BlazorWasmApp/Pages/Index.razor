@@ -4,7 +4,7 @@
 @using System.Text
 @inject IJSRuntime JSRuntime
 
-<h1>Zzzziping</h1>
+<h1>WASM Zzzziping</h1>
 
 <InputFile OnChange="Upload"/>
 @if (isLoading)
@@ -24,7 +24,7 @@ else if(hasUploaded)
     <button class="btn btn-primary" onclick="zip()">zipit</button>
     @if (zipping)
     {
-        <p>zipping ...</p>
+        <p>zipping ... check console for results</p>
     }
 }
 
