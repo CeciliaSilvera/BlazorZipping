@@ -1,0 +1,81 @@
+@page "/"
+@using System.IO
+@using System.IO.Compression
+@using System.Diagnostics
+@using System.Text
+@inject IJSRuntime JSRuntime
+
+<h1>Zzzziping</h1>
+
+<InputFile OnChange="Upload"/>
+@if (isLoading)
+{
+    <p>Uploading...</p>
+}
+else if(hasUploaded)
+{
+    <ul>
+        <li>
+            <ul>
+                <li>Name: @originalFile.Name</li>
+                <li>Last modified: @originalFile.LastModified.ToString()</li>
+                <li>Size (bytes): @originalFile.Size</li>
+            </ul>
+        </li>
+    </ul>
+    @if (hasUploaded)
+    {
+        <button class="btn btn-primary" onclick="zip()">zipit</button>
+    }
+    @if (zipping)
+    {
+        <p>zipping ...</p>
+    }
+}
+
+@code {
+    private static IBrowserFile originalFile;
+    private bool isLoading;
+    private bool hasUploaded;
+    private static bool zipping;
+    private static Stopwatch timer = new();
+    
+
+    void Upload(InputFileChangeEventArgs e)
+    {
+        isLoading = true;
+        hasUploaded = false;
+        zipping = false;
+        timer.Reset();
+
+        originalFile = e.GetMultipleFiles(1).FirstOrDefault();
+        isLoading = false;
+        hasUploaded = true;
+    }
+
+    [JSInvokable]
+    public static async Task<ZipFileResult> BeginZipFile()
+    {
+        zipping = true;
+        var stream = await Zipit();
+        return new ZipFileResult { FileName = "test.zip", ContentType = "application/octet-stream", FileBytes = stream.ToArray() };
+    }
+
+    public class ZipFileResult
+    {
+        public string FileName { get; set; }
+        public string ContentType { get; set; }
+        public byte[] FileBytes { get; set; }
+    }
+
+    private static async Task<MemoryStream> Zipit()
+    {
+        await using var zipFileMemoryStream = new MemoryStream();
+        using var archive = new ZipArchive(zipFileMemoryStream, ZipArchiveMode.Create, leaveOpen: true, Encoding.UTF8);
+        var entry = archive.CreateEntry(originalFile.Name, CompressionLevel.Optimal);
+        await using var entryStream = entry.Open();
+        await originalFile.OpenReadStream(74400320 ).CopyToAsync(entryStream);
+        await zipFileMemoryStream.CopyToAsync(entryStream);
+        return zipFileMemoryStream;
+    }
+}
